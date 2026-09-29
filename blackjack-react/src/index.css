@@ -1,0 +1,6 @@
+:root { font-family: Georgia, "Times New Roman", serif; color: white; background: #101010; font-synthesis: none; text-rendering: optimizeLegibility; }
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-width: 320px; min-height: 100%; }
+body { min-height: 100vh; background: radial-gradient(circle at 50% 0%, #263934 0, #101010 65%); }
+button, input { font: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid #d7a94b; outline-offset: 3px; }

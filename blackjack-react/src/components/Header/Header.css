@@ -1,0 +1,4 @@
+.game-header { width: 100%; padding: 20px clamp(20px, 6vw, 64px); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 1.05rem Arial, sans-serif; letter-spacing: .18em; }
+.brand-symbol { color: #d7a94b; font-size: 1.7rem; }
+.header-balance { color: #d7a94b; font: 700 1rem Georgia, serif; }

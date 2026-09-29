@@ -1,0 +1,5 @@
+.result-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; justify-content: center; align-items: center; z-index: 20; }
+.result-card { width: min(90%, 400px); padding: 40px; border-radius: 14px; background: #111; border: 1px solid #d7a94b; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.result-title { margin-bottom: 12px; color: #d7a94b; font-size: 34px; font-weight: 900; }
+.result-description { margin-bottom: 28px; color: white; }
+.new-round-button { padding: 13px 24px; border: 0; border-radius: 4px; background: #d7a94b; color: #111; font-weight: 800; cursor: pointer; }

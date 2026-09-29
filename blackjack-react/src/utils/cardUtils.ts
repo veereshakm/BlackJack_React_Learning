@@ -1,0 +1,1 @@
+// Card utility functions placeholder.
