@@ -1,1608 +1,507 @@
-Yes. I see the issue. The structure I gave earlier was larger than necessary for the current stage. Some files were placeholders, and a few files should not exist yet.
-
-For your goal, I recommend simplifying the project first. We will add advanced files later when we reach the concepts they teach.
-
-Your original TypeScript project already has the core Card model and terminal game logic. We will keep the useful game concepts and remove the terminal-specific parts.  
-
-1. DELETE THESE FILES/FOLDERS
-
-Delete these for now:
-
-```text
-src/pages/Rules.tsx
-src/pages/Statistics.tsx
-src/pages/Game.css
-```
-
-Also delete the entire `pages` folder.
-
-We do not need pages or routing yet.
-
-Delete:
-
-```text
-src/components/Balance/
-```
-
-We already show the balance in the Header. We can create a separate Balance component later when we need it.
-
-Delete:
-
-```text
-public/cards/
-```
-
-We are drawing the cards with HTML and CSS. We do not need card image files.
-
-Also, do not keep your old terminal game file if it is still inside the React project.
-
-If you have something like:
-
-```text
-src/game/main.ts
-src/game/index.ts
-src/main.ts
-```
-
-from the old terminal application, delete it.
-
-The old game asks for decisions through `prompt-sync`, which does not belong in the React browser application. 
-
-2. YOUR FINAL STRUCTURE FOR NOW
-
-Use this:
-
-```text
-blackjack-react/
-│
-├── src/
-│   │
-│   ├── components/
-│   │   │
-│   │   ├── ActionButtons/
-│   │   │   ├── ActionButtons.tsx
-│   │   │   └── ActionButtons.css
-│   │   │
-│   │   ├── BettingPanel/
-│   │   │   ├── BettingPanel.tsx
-│   │   │   └── BettingPanel.css
-│   │   │
-│   │   ├── Card/
-│   │   │   ├── Card.tsx
-│   │   │   └── Card.css
-│   │   │
-│   │   ├── GameResult/
-│   │   │   ├── GameResult.tsx
-│   │   │   └── GameResult.css
-│   │   │
-│   │   ├── GameTable/
-│   │   │   ├── GameTable.tsx
-│   │   │   └── GameTable.css
-│   │   │
-│   │   ├── Hand/
-│   │   │   ├── Hand.tsx
-│   │   │   └── Hand.css
-│   │   │
-│   │   └── Header/
-│   │       ├── Header.tsx
-│   │       └── Header.css
-│   │
-│   ├── game/
-│   │   ├── blackjack.ts
-│   │   ├── card.ts
-│   │   ├── deck.ts
-│   │   └── types.ts
-│   │
-│   ├── hooks/
-│   │   └── useBlackjack.ts
-│   │
-│   ├── utils/
-│   │   └── gameUtils.ts
-│   │
-│   ├── App.tsx
-│   ├── App.css
-│   ├── index.css
-│   └── main.tsx
-│
-├── package.json
-├── tsconfig.json
-├── tsconfig.app.json
-├── vite.config.ts
-└── index.html
-```
-
-3. FILES THAT SHOULD NOT BE EMPTY
-
-Every file below should contain code.
-
-I am giving you the complete current version.
-
-Start with these.
-
-`src/game/types.ts`
-
-```ts
-export type Suit = "♠" | "♥" | "♦" | "♣";
-
-export type GameStatus =
-  | "idle"
-  | "playing"
-  | "dealer-turn"
-  | "won"
-  | "lost"
-  | "push"
-  | "blackjack"
-  | "bust";
-
-export interface ICard {
-  value: number;
-  suit: Suit;
-}
-```
-
-`src/game/card.ts`
-
-Your existing Card file is already close to what we need. 
-
-Replace it with:
-
-```ts
-import { ICard, Suit } from "./types";
-
-class Card implements ICard {
-  static readonly CARD_VALUES: Record<number, string> = {
-    1: "A",
-    2: "2",
-    3: "3",
-    4: "4",
-    5: "5",
-    6: "6",
-    7: "7",
-    8: "8",
-    9: "9",
-    10: "10",
-    11: "J",
-    12: "Q",
-    13: "K",
-  };
-
-  value: number;
-  suit: Suit;
-
-  constructor(value: number, suit: Suit) {
-    this.value = value;
-    this.suit = suit;
-  }
-
-  getName(): string {
-    return Card.CARD_VALUES[this.value];
-  }
-}
-
-export default Card;
-```
-
-`src/game/deck.ts`
-
-```ts
-import Card from "./card";
-import { Suit } from "./types";
-
-class Deck {
-  private deck: Card[] = [];
-
-  constructor() {
-    this.reset();
-  }
-
-  reset(): void {
-    this.deck = [];
-
-    const suits: Suit[] = ["♠", "♥", "♦", "♣"];
-
-    for (const suit of suits) {
-      for (let value = 1; value <= 13; value++) {
-        this.deck.push(new Card(value, suit));
-      }
-    }
-
-    this.shuffle();
-  }
-
-  private shuffle(): void {
-    for (let i = this.deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-
-      [this.deck[i], this.deck[j]] = [
-        this.deck[j],
-        this.deck[i],
-      ];
-    }
-  }
-
-  deal(count: number): Card[] {
-    const cards: Card[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const card = this.deck.shift();
-
-      if (card) {
-        cards.push(card);
-      }
-    }
-
-    return cards;
-  }
-}
-
-export default Deck;
-```
-
-`src/utils/gameUtils.ts`
-
-```ts
-import { ICard } from "../game/types";
-
-export function getHandValue(cards: ICard[]): number {
-  let total = 0;
-  let aces = 0;
-
-  for (const card of cards) {
-    if (card.value === 1) {
-      total += 11;
-      aces++;
-    } else if (card.value >= 11) {
-      total += 10;
-    } else {
-      total += card.value;
-    }
-  }
-
-  while (total > 21 && aces > 0) {
-    total -= 10;
-    aces--;
-  }
-
-  return total;
-}
-
-export function isBlackjack(cards: ICard[]): boolean {
-  return cards.length === 2 && getHandValue(cards) === 21;
-}
-
-export function isBust(cards: ICard[]): boolean {
-  return getHandValue(cards) > 21;
-}
-```
-
-`src/game/blackjack.ts`
-
-```ts
-import Deck from "./deck";
-import { GameStatus, ICard } from "./types";
-import {
-  getHandValue,
-  isBlackjack,
-  isBust,
-} from "../utils/gameUtils";
-
-class BlackjackGame {
-  private deck: Deck;
-
-  playerHand: ICard[] = [];
-  dealerHand: ICard[] = [];
-
-  balance: number;
-  bet: number = 0;
-  status: GameStatus = "idle";
-
-  constructor(initialBalance: number = 1000) {
-    this.deck = new Deck();
-    this.balance = initialBalance;
-  }
-
-  startRound(bet: number): void {
-    if (bet <= 0 || bet > this.balance) {
-      return;
-    }
-
-    this.bet = bet;
-    this.balance -= bet;
-
-    this.deck.reset();
-
-    this.playerHand = this.deck.deal(2);
-    this.dealerHand = this.deck.deal(2);
-
-    const playerBlackjack =
-      isBlackjack(this.playerHand);
-
-    const dealerBlackjack =
-      isBlackjack(this.dealerHand);
-
-    if (playerBlackjack && dealerBlackjack) {
-      this.balance += bet;
-      this.status = "push";
-      return;
-    }
-
-    if (playerBlackjack) {
-      this.balance += bet * 2.5;
-      this.status = "blackjack";
-      return;
-    }
-
-    if (dealerBlackjack) {
-      this.status = "lost";
-      return;
-    }
-
-    this.status = "playing";
-  }
-
-  hit(): void {
-    if (this.status !== "playing") {
-      return;
-    }
-
-    const newCards = this.deck.deal(1);
-
-    this.playerHand = [
-      ...this.playerHand,
-      ...newCards,
-    ];
-
-    if (isBust(this.playerHand)) {
-      this.status = "bust";
-    }
-  }
-
-  stand(): void {
-    if (this.status !== "playing") {
-      return;
-    }
-
-    this.status = "dealer-turn";
-
-    while (getHandValue(this.dealerHand) < 17) {
-      const newCards = this.deck.deal(1);
-
-      this.dealerHand = [
-        ...this.dealerHand,
-        ...newCards,
-      ];
-    }
-
-    this.resolveRound();
-  }
-
-  private resolveRound(): void {
-    const playerValue =
-      getHandValue(this.playerHand);
-
-    const dealerValue =
-      getHandValue(this.dealerHand);
-
-    if (dealerValue > 21) {
-      this.balance += this.bet * 2;
-      this.status = "won";
-      return;
-    }
-
-    if (playerValue > dealerValue) {
-      this.balance += this.bet * 2;
-      this.status = "won";
-      return;
-    }
-
-    if (playerValue === dealerValue) {
-      this.balance += this.bet;
-      this.status = "push";
-      return;
-    }
-
-    this.status = "lost";
-  }
-
-  resetGame(): void {
-    this.playerHand = [];
-    this.dealerHand = [];
-    this.bet = 0;
-    this.status = "idle";
-  }
-}
-
-export default BlackjackGame;
-```
-
-The player hit and dealer turn rules follow the logic from your original game. 
-
-4. `src/hooks/useBlackjack.ts`
-
-```tsx
-import { useState } from "react";
-import BlackjackGame from "../game/blackjack";
-import { GameStatus, ICard } from "../game/types";
-
-export function useBlackjack() {
-  const [game] = useState(
-    () => new BlackjackGame(1000)
-  );
-
-  const [playerHand, setPlayerHand] =
-    useState<ICard[]>([]);
-
-  const [dealerHand, setDealerHand] =
-    useState<ICard[]>([]);
-
-  const [balance, setBalance] =
-    useState(1000);
-
-  const [bet, setBet] =
-    useState(0);
-
-  const [status, setStatus] =
-    useState<GameStatus>("idle");
-
-  function syncGame() {
-    setPlayerHand([...game.playerHand]);
-    setDealerHand([...game.dealerHand]);
-    setBalance(game.balance);
-    setBet(game.bet);
-    setStatus(game.status);
-  }
-
-  function startRound(amount: number) {
-    game.startRound(amount);
-    syncGame();
-  }
-
-  function hit() {
-    game.hit();
-    syncGame();
-  }
-
-  function stand() {
-    game.stand();
-    syncGame();
-  }
-
-  function resetGame() {
-    game.resetGame();
-    syncGame();
-  }
-
-  return {
-    playerHand,
-    dealerHand,
-    balance,
-    bet,
-    status,
-    startRound,
-    hit,
-    stand,
-    resetGame,
-  };
-}
-```
-
-5. `src/components/Card/Card.tsx`
-
-```tsx
-import { ICard } from "../../game/types";
-import "./Card.css";
-
-interface CardProps {
-  card: ICard;
-  hidden?: boolean;
-}
-
-function Card({
-  card,
-  hidden = false,
-}: CardProps) {
-  if (hidden) {
-    return (
-      <div className="playing-card card-back">
-        <div className="card-back-pattern">
-          ♠ ♥
-        </div>
-      </div>
-    );
-  }
-
-  const value =
-    card.value === 1
-      ? "A"
-      : card.value === 11
-      ? "J"
-      : card.value === 12
-      ? "Q"
-      : card.value === 13
-      ? "K"
-      : card.value.toString();
-
-  const isRed =
-    card.suit === "♥" ||
-    card.suit === "♦";
-
-  return (
-    <div
-      className={`playing-card ${
-        isRed ? "red-card" : "black-card"
-      }`}
-    >
-      <div className="card-corner top-left">
-        <span>{value}</span>
-        <span>{card.suit}</span>
-      </div>
-
-      <div className="card-center">
-        {card.suit}
-      </div>
-
-      <div className="card-corner bottom-right">
-        <span>{value}</span>
-        <span>{card.suit}</span>
-      </div>
-    </div>
-  );
-}
-
-export default Card;
-```
-
-6. `src/components/Card/Card.css`
-
-```css
-.playing-card {
-  width: 90px;
-  height: 130px;
-  background: white;
-  border-radius: 10px;
-  position: relative;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-  user-select: none;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.playing-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 14px 25px rgba(0, 0, 0, 0.3);
-}
-
-.red-card {
-  color: #c62828;
-}
-
-.black-card {
-  color: #151515;
-}
-
-.card-corner {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-weight: 700;
-  line-height: 1;
-  font-size: 18px;
-}
-
-.top-left {
-  top: 9px;
-  left: 9px;
-}
-
-.bottom-right {
-  right: 9px;
-  bottom: 9px;
-  transform: rotate(180deg);
-}
-
-.card-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 42px;
-}
-
-.card-back {
-  background: #182848;
-  color: white;
-  border: 4px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-back-pattern {
-  width: 70px;
-  height: 110px;
-  border: 2px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  letter-spacing: 6px;
-}
-```
-
-7. `src/components/Hand/Hand.tsx`
-
-```tsx
-import { ICard } from "../../game/types";
-import Card from "../Card/Card";
-import "./Hand.css";
-
-interface HandProps {
-  cards: ICard[];
-  hideSecondCard?: boolean;
-}
-
-function Hand({
-  cards,
-  hideSecondCard = false,
-}: HandProps) {
-  return (
-    <div className="hand">
-      {cards.map((card, index) => (
-        <Card
-          key={`${card.suit}-${card.value}-${index}`}
-          card={card}
-          hidden={
-            hideSecondCard && index === 1
-          }
-        />
-      ))}
-    </div>
-  );
-}
-
-export default Hand;
-```
-
-8. `src/components/Hand/Hand.css`
-
-```css
-.hand {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  min-height: 140px;
-}
-
-.hand .playing-card:not(:first-child) {
-  margin-left: -10px;
-}
-
-@media (max-width: 600px) {
-  .hand {
-    gap: 6px;
-  }
-
-  .hand .playing-card:not(:first-child) {
-    margin-left: -25px;
-  }
-}
-```
-
-9. `src/components/Header/Header.tsx`
-
-```tsx
-import "./Header.css";
-
-interface HeaderProps {
-  balance: number;
-}
-
-function Header({
-  balance,
-}: HeaderProps) {
-  return (
-    <header className="game-header">
-      <div className="brand">
-        <span className="brand-symbol">
-          ♠
-        </span>
-
-        <span>BLACKJACK</span>
-      </div>
-
-      <div className="header-balance">
-        Balance: ${balance.toFixed(0)}
-      </div>
-    </header>
-  );
-}
-
-export default Header;
-```
-
-10. `src/components/Header/Header.css`
-
-```css
-.game-header {
-  width: 100%;
-  padding: 20px 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.35);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 2px;
-}
-
-.brand-symbol {
-  color: #d4af37;
-}
-
-.header-balance {
-  color: #d4af37;
-  font-weight: 700;
-}
-```
-
-11. `src/components/BettingPanel/BettingPanel.tsx`
-
-```tsx
-import { useState } from "react";
-import "./BettingPanel.css";
-
-interface BettingPanelProps {
-  balance: number;
-  onBet: (amount: number) => void;
-}
-
-function BettingPanel({
-  balance,
-  onBet,
-}: BettingPanelProps) {
-  const [bet, setBet] = useState(100);
-
-  const quickBets = [
-    10,
-    25,
-    50,
-    100,
-    250,
-  ];
-
-  function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
-
-    if (bet > 0 && bet <= balance) {
-      onBet(bet);
-    }
-  }
-
-  return (
-    <form
-      className="betting-panel"
-      onSubmit={handleSubmit}
-    >
-      <div className="bet-title">
-        PLACE YOUR BET
-      </div>
-
-      <div className="quick-bets">
-        {quickBets.map((amount) => (
-          <button
-            type="button"
-            key={amount}
-            onClick={() => setBet(amount)}
-            className={
-              bet === amount
-                ? "chip selected"
-                : "chip"
-            }
-          >
-            ${amount}
-          </button>
-        ))}
-      </div>
-
-      <div className="custom-bet">
-        <span>$</span>
-
-        <input
-          type="number"
-          min="1"
-          max={balance}
-          value={bet}
-          onChange={(event) =>
-            setBet(
-              Number(event.target.value)
-            )
-          }
-        />
-      </div>
-
-      <button
-        className="deal-button"
-        type="submit"
-        disabled={
-          bet <= 0 || bet > balance
-        }
-      >
-        DEAL
-      </button>
-    </form>
-  );
-}
-
-export default BettingPanel;
-```
-
-12. `src/components/BettingPanel/BettingPanel.css`
-
-```css
-.betting-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.bet-title {
-  font-size: 12px;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.quick-bets {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.chip {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px solid #777;
-  background: #222;
-  color: white;
-  cursor: pointer;
-  font-weight: 700;
-  transition: 0.2s;
-}
-
-.chip:hover,
-.chip.selected {
-  border-color: #d4af37;
-  transform: translateY(-3px);
-}
-
-.custom-bet {
-  display: flex;
-  align-items: center;
-  width: 150px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
-.custom-bet span {
-  color: #d4af37;
-  font-weight: 700;
-}
-
-.custom-bet input {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: white;
-  font-size: 16px;
-  padding-left: 5px;
-}
-
-.deal-button {
-  width: 150px;
-  padding: 13px;
-  border: none;
-  border-radius: 8px;
-  background: #d4af37;
-  color: #151515;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.deal-button:hover:not(:disabled) {
-  background: #f0cf62;
-}
-
-.deal-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-```
-
-13. `src/components/ActionButtons/ActionButtons.tsx`
-
-```tsx
-import "./ActionButtons.css";
-
-interface ActionButtonsProps {
-  onHit: () => void;
-  onStand: () => void;
-  disabled?: boolean;
-}
-
-function ActionButtons({
-  onHit,
-  onStand,
-  disabled = false,
-}: ActionButtonsProps) {
-  return (
-    <div className="action-buttons">
-      <button
-        className="hit-button"
-        onClick={onHit}
-        disabled={disabled}
-      >
-        HIT
-      </button>
-
-      <button
-        className="stand-button"
-        onClick={onStand}
-        disabled={disabled}
-      >
-        STAND
-      </button>
-    </div>
-  );
-}
-
-export default ActionButtons;
-```
-
-14. `src/components/ActionButtons/ActionButtons.css`
-
-```css
-.action-buttons {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
-
-.action-buttons button {
-  min-width: 130px;
-  padding: 14px 22px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 800;
-  cursor: pointer;
-  letter-spacing: 1px;
-  transition: 0.2s;
-}
-
-.hit-button {
-  background: #2e7d32;
-  color: white;
-}
-
-.stand-button {
-  background: #b71c1c;
-  color: white;
-}
-
-.action-buttons button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-
-.action-buttons button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-```
-
-15. `src/components/GameResult/GameResult.tsx`
-
-```tsx
-import { GameStatus } from "../../game/types";
-import "./GameResult.css";
-
-interface GameResultProps {
-  status: GameStatus;
-  bet: number;
-  onNewRound: () => void;
-}
-
-function GameResult({
-  status,
-  bet,
-  onNewRound,
-}: GameResultProps) {
-  const results = {
-    won: {
-      title: "YOU WIN",
-      description: `You won $${bet}`,
-    },
-    lost: {
-      title: "DEALER WINS",
-      description: `You lost $${bet}`,
-    },
-    push: {
-      title: "PUSH",
-      description:
-        "Your bet has been returned",
-    },
-    blackjack: {
-      title: "BLACKJACK!",
-      description: `You won $${bet * 2.5}`,
-    },
-    bust: {
-      title: "BUST",
-      description: `You lost $${bet}`,
-    },
-  };
-
-  if (!(status in results)) {
-    return null;
-  }
-
-  const result =
-    results[status as keyof typeof results];
-
-  return (
-    <div className="result-overlay">
-      <div className="result-card">
-        <div className="result-title">
-          {result.title}
-        </div>
-
-        <div className="result-description">
-          {result.description}
-        </div>
-
-        <button
-          className="new-round-button"
-          onClick={onNewRound}
-        >
-          NEW ROUND
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default GameResult;
-```
-
-16. `src/components/GameResult/GameResult.css`
-
-```css
-.result-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 20;
-}
-
-.result-card {
-  width: min(90%, 400px);
-  padding: 40px;
-  border-radius: 18px;
-  background: #111;
-  border: 1px solid #d4af37;
-  text-align: center;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.result-title {
-  font-size: 34px;
-  font-weight: 900;
-  color: #d4af37;
-  margin-bottom: 12px;
-}
-
-.result-description {
-  color: white;
-  margin-bottom: 28px;
-}
-
-.new-round-button {
-  border: none;
-  border-radius: 8px;
-  padding: 13px 24px;
-  background: #d4af37;
-  color: #111;
-  font-weight: 800;
-  cursor: pointer;
-}
-```
-
-17. `src/components/GameTable/GameTable.tsx`
-
-```tsx
-import { GameStatus, ICard } from "../../game/types";
-import { getHandValue } from "../../utils/gameUtils";
-import Hand from "../Hand/Hand";
-import ActionButtons from "../ActionButtons/ActionButtons";
-import BettingPanel from "../BettingPanel/BettingPanel";
-import GameResult from "../GameResult/GameResult";
-import "./GameTable.css";
-
-interface GameTableProps {
-  playerHand: ICard[];
-  dealerHand: ICard[];
-  balance: number;
-  bet: number;
-  status: GameStatus;
-  onBet: (amount: number) => void;
-  onHit: () => void;
-  onStand: () => void;
-  onNewRound: () => void;
-}
-
-function GameTable({
-  playerHand,
-  dealerHand,
-  balance,
-  bet,
-  status,
-  onBet,
-  onHit,
-  onStand,
-  onNewRound,
-}: GameTableProps) {
-  const playerValue =
-    getHandValue(playerHand);
-
-  const dealerValue =
-    getHandValue(dealerHand);
-
-  const isPlaying =
-    status === "playing";
-
-  const showBetting =
-    status === "idle";
-
-  return (
-    <main className="game-table">
-      <section className="dealer-section">
-        <div className="section-title">
-          DEALER
-        </div>
-
-        <Hand
-          cards={dealerHand}
-          hideSecondCard={isPlaying}
-        />
-
-        {dealerHand.length > 0 && (
-          <div className="score">
-            {isPlaying ? "?" : dealerValue}
-          </div>
-        )}
-      </section>
-
-      <div className="table-divider" />
-
-      <section className="player-section">
-        <div className="section-title">
-          PLAYER
-        </div>
-
-        <Hand cards={playerHand} />
-
-        {playerHand.length > 0 && (
-          <div className="score">
-            {playerValue}
-          </div>
-        )}
-      </section>
-
-      {showBetting && (
-        <BettingPanel
-          balance={balance}
-          onBet={onBet}
-        />
-      )}
-
-      {isPlaying && (
-        <ActionButtons
-          onHit={onHit}
-          onStand={onStand}
-        />
-      )}
-
-      {status !== "idle" &&
-        status !== "playing" &&
-        status !== "dealer-turn" && (
-          <GameResult
-            status={status}
-            bet={bet}
-            onNewRound={onNewRound}
-          />
-        )}
-    </main>
-  );
-}
-
-export default GameTable;
-```
-
-18. `src/components/GameTable/GameTable.css`
-
-```css
-.game-table {
-  width: min(1100px, 94%);
-  min-height: 700px;
-  margin: 30px auto;
-  padding: 40px;
-  border-radius: 28px;
-  background:
-    radial-gradient(
-      circle at center,
-      #176b42 0%,
-      #0e4d30 55%,
-      #073520 100%
-    );
-  border: 10px solid #25180f;
-  box-shadow:
-    inset 0 0 80px rgba(0, 0, 0, 0.35),
-    0 25px 60px rgba(0, 0, 0, 0.45);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-}
-
-.dealer-section,
-.player-section {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.section-title {
-  font-size: 14px;
-  letter-spacing: 3px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.score {
-  min-width: 42px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.3);
-  color: white;
-  text-align: center;
-  font-weight: 800;
-}
-
-.table-divider {
-  width: 65%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.15);
-}
-
-@media (max-width: 600px) {
-  .game-table {
-    width: 96%;
-    min-height: 650px;
-    padding: 25px 10px;
-    border-width: 6px;
-  }
-}
-```
-
-19. `src/App.tsx`
-
-```tsx
-import Game from "./components/GameTable/GameTable";
-import { useBlackjack } from "./hooks/useBlackjack";
-import Header from "./components/Header/Header";
-import "./App.css";
-
-function App() {
-  const {
-    playerHand,
-    dealerHand,
-    balance,
-    bet,
-    status,
-    startRound,
-    hit,
-    stand,
-    resetGame,
-  } = useBlackjack();
-
-  return (
-    <div className="app">
-      <Header balance={balance} />
-
-      <Game
-        playerHand={playerHand}
-        dealerHand={dealerHand}
-        balance={balance}
-        bet={bet}
-        status={status}
-        onBet={startRound}
-        onHit={hit}
-        onStand={stand}
-        onNewRound={resetGame}
-      />
-    </div>
-  );
-}
-
-export default App;
-```
-
-There is one correction here. Since `GameTable` is not a page, I recommend naming the imported component correctly:
-
-```tsx
-import GameTable from "./components/GameTable/GameTable";
-```
-
-Then:
-
-```tsx
-<GameTable
-```
-
-So the final `App.tsx` is:
-
-```tsx
-import GameTable from "./components/GameTable/GameTable";
-import { useBlackjack } from "./hooks/useBlackjack";
-import Header from "./components/Header/Header";
-import "./App.css";
-
-function App() {
-  const {
-    playerHand,
-    dealerHand,
-    balance,
-    bet,
-    status,
-    startRound,
-    hit,
-    stand,
-    resetGame,
-  } = useBlackjack();
-
-  return (
-    <div className="app">
-      <Header balance={balance} />
-
-      <GameTable
-        playerHand={playerHand}
-        dealerHand={dealerHand}
-        balance={balance}
-        bet={bet}
-        status={status}
-        onBet={startRound}
-        onHit={hit}
-        onStand={stand}
-        onNewRound={resetGame}
-      />
-    </div>
-  );
-}
-
-export default App;
-```
-
-20. `src/App.css`
-
-```css
-.app {
-  min-height: 100vh;
-}
-```
-
-21. `src/index.css`
-
-```css
-:root {
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-  color: white;
-  background: #101010;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100%;
-}
-
-body {
-  min-height: 100vh;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button:focus-visible,
-input:focus-visible {
-  outline: 2px solid #d4af37;
-  outline-offset: 3px;
-}
-```
-
-22. `src/main.tsx`
-
-```tsx
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App";
-
-createRoot(
-  document.getElementById("root")!
-).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
-```
-
-23. PACKAGE.JSON
-
-Your uploaded original `package.json` is for the old terminal TypeScript project and contains `prompt-sync`. 
-
-Do not use it for the React project.
-
-Your React project should have a Vite-generated package.json. If you created the React project using:
-
-```bash
-npm create vite@latest blackjack-react -- --template react-ts
-```
-
-keep the generated `package.json`.
-
-Then:
-
-```bash
-npm install
-```
-
-Do not install `prompt-sync`.
-
-24. What is actually necessary right now
-
-Keep:
-
-```text
-App.tsx
-App.css
-index.css
-main.tsx
-
-game/
-  card.ts
-  deck.ts
-  blackjack.ts
-  types.ts
-
-utils/
-  gameUtils.ts
-
-hooks/
-  useBlackjack.ts
-
-components/
-  Card/
-  Hand/
-  Header/
-  BettingPanel/
-  ActionButtons/
-  GameResult/
-  GameTable/
-```
-
-Delete:
-
-```text
-pages/
-Balance/
-public/cards/
-```
-
-You do not need routing yet.
-
-You do not need a separate Rules page yet.
-
-You do not need a Statistics page yet.
-
-You do not need a separate Balance component yet.
-
-25. One more thing before running it
-
-Your current project structure should look exactly like:
-
-```text
-src
-│
-├── components
-│   ├── ActionButtons
-│   ├── BettingPanel
-│   ├── Card
-│   ├── GameResult
-│   ├── GameTable
-│   ├── Hand
-│   └── Header
-│
-├── game
-│   ├── blackjack.ts
-│   ├── card.ts
-│   ├── deck.ts
-│   └── types.ts
-│
-├── hooks
-│   └── useBlackjack.ts
-│
-├── utils
-│   └── gameUtils.ts
-│
+React Blackjack Frontend
+End-to-End Project and Learning
+Report
+A beginner-friendly guide to understanding the project, its architecture, every major
+component, the React concepts behind it, and the skills you should carry into future
+applications.
+Project type
+Domain
+Primary goal
+Interactive React + TypeScript web application
+Blackjack card game
+Learn React by building a complete frontend around an existing TypeScript game
+Secondary goal
+Target learner
+Learn how real frontend components communicate and how state flows through an application
+Beginner who understands basic TypeScript or JavaScript and wants practical React experience
+Core idea: The project separates the game rules from the user interface. The game logic knows how
+Blackjack works. React knows how to display the game and respond to user actions.
+Page 1
+React Blackjack Frontend, End-to-End Project and Learning Report
+1. Project Objective
+The objective is to build a polished Blackjack frontend using React and TypeScript while learning React
+through a real project instead of studying isolated examples.
+You already have a TypeScript version of the Blackjack game. The React version turns that logic into an
+interactive browser application.
+By the end, you should understand how a React application starts, how components are created, how
+data moves between components, how user actions update state, how reusable components are
+designed, and how React connects to existing business logic.
+What the finished application should feel like
+• A user opens the Blackjack application in a browser.
+• The screen shows a Blackjack table with a dealer area and a player area.
+• The user selects a betting amount and starts a round.
+• The application deals cards.
+• The user clicks HIT or STAND.
+• The interface updates immediately without a page refresh.
+• The dealer plays according to the game rules.
+• The application shows WIN, LOSS, PUSH, BLACKJACK, or BUST.
+• The balance changes according to the result.
+• The user starts another round.
+What this project is teaching
+The game itself is the subject. React is the learning platform. Each feature gives you a reason to learn
+a React concept.
+2. React in Simple Terms
+React is a JavaScript library for building user interfaces. A React application is built from components. A
+component is a reusable piece of the screen with its own structure and behavior.
+For this project, think of the application as a collection of small UI pieces rather than one large file.
+App
+├── Header
+└── GameTable
+├── Dealer area
+│ └── Hand
+│ └── Card
+├── Player area
+│ └── Hand
+│ └── Card
+├── BettingPanel
+├── ActionButtons
+└── GameResult
+React renders these components and updates the parts of the screen whose data changes. The user
+does not need to refresh the browser after clicking a button.
+3. Overall Architecture
+The project uses three broad layers.
+Page 2
+React Blackjack Frontend, End-to-End Project and Learning Report
+React Blackjack Frontend, End-to-End Project and Learning Report Page 3
+Layer Purpose Examples
+Game logic Knows Blackjack rules and card operations BlackjackGame, Deck, Card
+React state and hooks Connects game logic to React's rendering systemuseBlackjack
+UI components Displays the game and handles user interaction Card, Hand, Header, GameTable, BettingPanel
+This separation is important for future development. If you change the visual design, the Blackjack
+rules do not need to change. If you change the game rules, the UI structure does not need to be
+rewritten from scratch.
+4. Project Folder Structure
+src/
+├── components/
+│ ├── ActionButtons/
+│ ├── BettingPanel/
+│ ├── Card/
+│ ├── GameResult/
+│ ├── GameTable/
+│ ├── Hand/
+│ └── Header/
+├── game/
+│ ├── blackjack.ts
+│ ├── card.ts
+│ ├── deck.ts
+│ └── types.ts
+├── hooks/
+│ └── useBlackjack.ts
+├── utils/
+│ └── gameUtils.ts
 ├── App.tsx
 ├── App.css
 ├── index.css
 └── main.tsx
-```
-
-No empty files should remain.
-
-Run:
-
-```bash
-npm install
-```
-
-Then:
-
-```bash
-npm run dev
-```
-
-If TypeScript gives you an error, do not start changing random files. Send me the exact error and the file it points to.
-
-Once this runs, we will not add another feature immediately. We will start the proper walkthrough from `main.tsx`, one concept at a time, and connect each React concept to the Blackjack UI.
+Why this structure matters
+• components contains visual and interactive React pieces.
+• game contains the Blackjack domain logic.
+• hooks contains React-specific state and coordination logic.
+• utils contains reusable calculations that do not need to be React components.
+• App.tsx assembles the main application.
+• main.tsx starts the React application.
+• CSS files stay close to the component they style.
+5. Application Startup: main.tsx
+main.tsx is the entry point. The browser loads the HTML page, and this file tells React where to render
+the application.
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App";
+createRoot(document.getElementById("root")!).render(
+<StrictMode>
+<App />
+</StrictMode>
+);
+React Blackjack Frontend, End-to-End Project and Learning Report Page 4
+Beginner meaning
+• createRoot creates a React root.
+• document.getElementById('root') finds the HTML element where React will appear.
+• App is the top-level React component.
+• StrictMode helps identify certain development problems.
+• index.css provides global styles.
+Learning outcome
+You should be able to explain how a React application starts and how the browser connects the HTML
+page to React.
+6. App.tsx: The Application Coordinator
+App.tsx is the top-level component. It uses the Blackjack hook and passes the required data and
+functions to the UI.
+function App() {
+const {
+playerHand,
+dealerHand,
+balance,
+bet,
+status,
+startRound,
+hit,
+stand,
+resetGame,
+} = useBlackjack();
+return (
+<div className="app">
+<Header balance={balance} />
+<GameTable
+playerHand={playerHand}
+dealerHand={dealerHand}
+balance={balance}
+bet={bet}
+status={status}
+onBet={startRound}
+onHit={hit}
+onStand={stand}
+onNewRound={resetGame}
+/>
+</div>
+);
+}
+App does not contain the visual details of every card. It coordinates the major pieces. This is a key
+React design principle: keep large components focused on composition and move detailed behavior
+into smaller components.
+7. Game Logic Layer
+7.1 Card
+Card represents one playing card. It stores a numeric value and a suit. It also converts values such as
+1, 11, 12, and 13 into A, J, Q, and K for display.
+7.2 Deck
+Deck creates the 52 cards, shuffles them, resets the deck, and deals cards.
+7.3 BlackjackGame
+BlackjackGame manages a complete round. It stores the player hand, dealer hand, balance, bet, and
+current game status. It contains actions such as startRound, hit, stand, and resetGame.
+7.4 types.ts
+types.ts defines shared TypeScript types. Suit describes the four suits. GameStatus describes the
+possible states of the game. ICard describes the shape of a card.
+Why keep this outside React?
+Blackjack rules are business logic. They do not need to know how the browser looks. Keeping them
+separate makes the code easier to test, reuse, and maintain.
+8. Utility Functions
+gameUtils.ts contains calculations that are useful in multiple places.
+getHandValue(cards)
+isBlackjack(cards)
+isBust(cards)
+getHandValue calculates a hand's score and handles the special behavior of an Ace. An Ace starts as
+11 and changes to 1 when needed to prevent a bust.
+Learning outcome
+Learn to identify logic that is reusable and independent from the UI. This skill is useful in frontend,
+backend, and full-stack applications.
+9. useBlackjack.ts: The React Bridge
+This is one of the most important files for your React learning.
+The BlackjackGame class knows the game. React needs state so the screen updates when the game
+changes. useBlackjack connects the two.
+const [balance, setBalance] = useState(1000);
+const [playerHand, setPlayerHand] = useState<ICard[]>([]);
+const [dealerHand, setDealerHand] = useState<ICard[]>([]);
+const [status, setStatus] = useState<GameStatus>("idle");
+What useState means
+useState stores information that belongs to the UI. When a state setter runs, React renders the
+affected components again.
+syncGame
+The game class changes its internal values. syncGame copies those values into React state. This gives
+React the information needed to update the screen.
+Learning outcome
+• Understand state.
+• Understand re-rendering.
+• Understand custom hooks.
+• Understand how React can coordinate an existing class-based business layer.
+• Learn to separate UI state coordination from UI markup.
+Page 5
+React Blackjack Frontend, End-to-End Project and Learning Report
+10. React Components
+Component
+Responsibility
+React concept learned
+Header
+Card
+Shows branding and current balance
+Displays one playing card
+Props
+Props, conditional rendering
+Hand
+BettingPanel
+ActionButtons
+GameResult
+GameTable
+Displays a collection of cards
+Selects a betting amount and starts a round
+Provides HIT and STAND actions
+Displays the round result
+Combines the major game sections
+11. Card Component
+Card receives a card object through props.
+interface CardProps {
+card: ICard;
+hidden?: boolean;
+}
+Arrays, map, keys, props
+useState, events, forms
+Event handlers, props
+Conditional rendering
+Composition, props, conditional UI
+The hidden prop lets the dealer's second card appear as a card back during the player's turn.
+Concepts
+• Props: data sent into a component.
+• Optional props: hidden does not have to be supplied.
+• Conditional rendering: different markup appears when hidden is true.
+• Dynamic classes: the suit determines whether the card receives the red-card or black-card class.
+12. Hand Component
+A Hand represents a collection of cards. It receives an array and creates one Card component for each
+item.
+cards.map((card, index) => (
+<Card
+key={`${card.suit}-${card.value}-${index}`}
+card={card}
+/>
+))
+Why map matters
+React interfaces often display lists. map transforms data into UI elements. This is one of the most
+important patterns you should carry into future projects.
+Why key matters
+React uses keys to identify list items efficiently between renders. Every rendered list item should have
+a stable, meaningful key.
+13. BettingPanel Component
+BettingPanel handles the input used before a round starts.
+Page 6
+React Blackjack Frontend, End-to-End Project and Learning Report
+It stores the currently selected bet with useState. It also demonstrates form submission, button events,
+numeric input, validation, disabled buttons, and passing a callback to a parent.
+Important React concepts
+• Local component state.
+• onChange for controlled inputs.
+• onSubmit for forms.
+• onClick for quick bet buttons.
+• Props for receiving the balance.
+• Callback props for telling the parent to start a round.
+14. ActionButtons Component
+This component contains HIT and STAND. It does not own the game logic. It receives functions from its
+parent.
+interface ActionButtonsProps {
+onHit: () => void;
+onStand: () => void;
+disabled?: boolean;
+}
+This teaches an important React pattern: a child component triggers behavior owned by a parent
+through a function passed as a prop.
+15. GameResult Component
+GameResult displays the final state of a round. It decides what message to show from the game status.
+Examples include YOU WIN, DEALER WINS, PUSH, BLACKJACK, and BUST.
+Learning outcome
+You learn conditional rendering. The interface should reflect application state. The same component
+can display different content without duplicating the entire screen.
+16. GameTable Component
+GameTable is the main visual area. It places the dealer hand, player hand, betting panel, action
+buttons, and result overlay into one game experience.
+It also decides which controls are visible. For example, betting appears when status is idle. HIT and
+STAND appear while the game is playing.
+This is where React starts to feel like a real application
+The component is no longer a simple example. It combines state, props, conditional rendering,
+reusable components, and user actions.
+17. Complete Data and Event Flow
+User clicks DEAL
+↓
+BettingPanel
+↓
+onBet(amount)
+↓
+App
+↓
+Page 7
+React Blackjack Frontend, End-to-End Project and Learning Report
+React Blackjack Frontend, End-to-End Project and Learning Report Page 8
+useBlackjack.startRound()
+↓
+BlackjackGame.startRound()
+↓
+Game state changes
+↓
+syncGame()
+↓
+React state updates
+↓
+App re-renders
+↓
+GameTable receives new props
+↓
+Cards and controls update
+The same pattern applies to HIT, STAND, and NEW ROUND. This flow is one of the most important
+things to understand before moving to larger React applications.
+18. Game States
+Status Meaning Expected UI
+idle Waiting for a bet Betting panel
+playing Player is making decisions Cards, HIT, STAND
+dealer-turn Dealer is completing the round Dealer processing
+won Player wins Result screen
+lost Player loses Result screen
+push Player and dealer tie Result screen
+blackjack Player has a natural Blackjack Result screen
+bust Player exceeds 21 Result screen
+19. CSS and UI Learning
+The CSS layer gives you practical frontend experience alongside React.
+• Global CSS establishes page-wide defaults.
+• Component CSS keeps styling close to the component.
+• Flexbox handles card and control layouts.
+• Media queries support smaller screens.
+• Transitions create interaction feedback.
+• Gradients, shadows, borders, spacing, and typography create the Blackjack table visual.
+The visual goal is to build a polished table rather than a plain collection of buttons and text.
+20. Beginner Reading Order
+When you later walk through the entire project, use this order. It reduces confusion.
+Step File Question to answer
+1 main.tsx How does React start?
+React Blackjack Frontend, End-to-End Project and Learning Report Page 9
+Step File Question to answer
+2 App.tsx How are major components assembled?
+3 useBlackjack.ts Where does React state live?
+4 types.ts What data shapes exist?
+5 card.ts and deck.ts How are cards created?
+6 blackjack.ts How does a round work?
+7 gameUtils.ts How are scores calculated?
+8 Header and Card How do props work?
+9 Hand How does React render arrays?
+10 BettingPanel How do inputs and events work?
+11 ActionButtons How do child components trigger parent actions?
+12 GameResult How does conditional rendering work?
+13 GameTable How does composition bring everything together?
+14 CSS files How is the UI styled and made responsive?
+21. React Concepts You Should Learn Through This
+Project
+Phase Concept Where you practice it
+1 JSX Every .tsx component
+2 Components Card, Hand, Header, GameTable
+3 Props Card, Header, ActionButtons
+4 useState BettingPanel and useBlackjack
+5 Events Click, change, submit
+6 Conditional rendering Dealer card, controls, results
+7 Lists and keys Hand
+8 Forms and controlled inputs BettingPanel
+9 Component composition GameTable
+10 Callback props HIT, STAND, DEAL
+11 Custom hooks useBlackjack
+12 TypeScript with React Props and game data
+13 Responsive design CSS media queries
+14 Project architecture game, hooks, components, utils
+22. Concepts to Add After the Current Version
+React Blackjack Frontend, End-to-End Project and Learning Report Page 10
+The current project gives you a strong React foundation. After it works, extend it in stages.
+Stage Feature New learning
+1 Animations when cards are dealt CSS transitions and animation timing
+2 Dealer card reveal animation State sequencing
+3 Game history Arrays in state and derived data
+4 Statistics panel Derived state and data visualization
+5 Rules modal Reusable modal component
+6 Dark/light theme Context or shared state
+7 Persistent balance localStorage and effects
+8 Sound effects Browser APIs and effects
+9 Responsive mobile layout Advanced responsive CSS
+10 Unit tests Testing game logic and components
+11 React Router Multiple application views
+12 API-backed leaderboard Async requests and backend integration
+23. Advanced React Skills to Learn After This Project
+• useEffect for synchronization with external systems.
+• useMemo for expensive derived calculations when measurement shows a need.
+• useCallback and memo for specific rendering optimization cases.
+• useReducer for more complex state transitions.
+• Context for shared application state.
+• Custom hooks for reusable behavior.
+• Error boundaries for handling rendering failures.
+• Testing Library for user-focused component tests.
+• React DevTools for inspecting component trees and state.
+• Accessibility practices for keyboard users and screen readers.
+• Performance profiling and code splitting.
+24. Skills You Should Carry Into Future Projects
+Skill How it transfers
+Component thinking Break dashboards, forms, e-commerce pages, and admin panels into reusable UI pieces.
+State management Track filters, forms, authentication state, shopping carts, tabs, and workflows.
+Props Pass data and behavior between components.
+Event handling Build buttons, forms, search fields, drag actions, and interactive controls.
+List rendering Render products, employees, messages, transactions, and API results.
+Conditional rendering Show loading, error, empty, success, and authenticated states.
+Custom hooks Package reusable frontend behavior.
+Skill
+Separation of concerns
+TypeScript types
+How it transfers
+Keep business logic separate from presentation.
+Make component contracts and data structures clearer.
+Responsive CSS
+Build interfaces for desktop, tablet, and mobile.
+25. Corporate Relevance
+This project mirrors several patterns used in production frontend applications.
+• Reusable components replace duplicated UI.
+• Props define communication between components.
+• State represents changing application information.
+• Business logic stays separate from presentation.
+• Types describe contracts between parts of the application.
+• Folder structure helps teams locate code quickly.
+• CSS is organized around components and global styles.
+• User actions flow through explicit event handlers.
+The Blackjack domain is small, so you can focus on frontend engineering rather than spending most of
+your time understanding a large business domain.
+26. Final Learning Outcomes
+After completing and understanding the project, you should be able to:
+• Explain what React is and why components are used.
+• Create functional React components with TypeScript.
+• Define and use component props.
+• Create and update local state with useState.
+• Handle click, input, and form events.
+• Render arrays using map and provide keys.
+• Use conditional rendering based on application state.
+• Build controlled form inputs.
+• Pass functions from parents to children.
+• Create and use custom hooks.
+• Connect React state to existing business logic.
+• Organize a React project into sensible folders.
+• Style a responsive interface with CSS.
+• Debug component and state problems.
+• Read an unfamiliar React project and trace its data flow.
+• Explain how a user action travels through the application and causes the UI to update.
+27. Project Completion Checklist
+Area
+Done when you can explain it
+Startup
+JSX
+You understand main.tsx and the React root.
+You understand why HTML-like syntax appears inside TypeScript.
+Page 11
+React Blackjack Frontend, End-to-End Project and Learning Report
+React Blackjack Frontend, End-to-End Project and Learning Report Page 12
+Area Done when you can explain it
+Components You can explain the purpose of every component.
+Props You know where each prop comes from and why it exists.
+State You know what changes state and what causes a re-render.
+Events You can trace DEAL, HIT, STAND, and NEW ROUND.
+Lists You understand how Hand creates Card components.
+Conditional UI You understand why controls and results appear or disappear.
+Hook You can explain why useBlackjack exists.
+Game logic You can explain the difference between game rules and UI.
+CSS You understand the main layout and responsive rules.
+Debugging You can find which component owns a problem.
+28. Final Project Definition
+React Blackjack is a learning-focused interactive web application built with React and TypeScript. The
+application uses a separate Blackjack game engine for cards, deck operations, scoring, betting, dealer
+behavior, and round results. React provides the browser interface, state coordination, reusable
+components, user interaction, and responsive presentation.
+The most important result is not the Blackjack game itself. The project gives you a small but complete
+environment where you repeatedly practice the same patterns used in larger React applications.
+When you later build an e-commerce application, employee dashboard, banking interface, booking
+system, portfolio, admin panel, or SaaS frontend, the same ideas will appear again: components,
+props, state, events, lists, conditional rendering, forms, hooks, data flow, reusable logic, and
+separation between business rules and presentation.
+The mental model to remember
+DATA
+↓
+React State / Props
+↓
+Components
+↓
+Browser UI
+↓
+User Action
+↓
+Event Handler
+↓
+State / Business Logic Update
+↓
+React Re-render
+↓
+Updated UI
+If you understand this loop clearly, you have the foundation needed to move from small React
+exercises to real applications.
