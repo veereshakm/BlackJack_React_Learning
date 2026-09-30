@@ -40,6 +40,16 @@ The application includes:
 - bust, push, and win/loss results
 - a polished table-style UI built with React components
 
+## Screenshots
+
+### Betting screen
+
+![Blackjack betting screen](blackjack-react/src/assets/blackjack-betting.png)
+
+### Gameplay
+
+![Blackjack gameplay screen](blackjack-react/src/assets/blackjack-gameplay.png)
+
 ## Project goals
 
 ### Primary goal
