@@ -1,181 +1,147 @@
-﻿# BlackJack-Game-React-Learn
+﻿# BlackJack Game React Learn
 
-This project is a blackjack game learning repository that combines a TypeScript console-version implementation and a modern React + Vite front-end version. It was built to practice core game logic, state management, UI components, and card-game rules in a beginner-friendly structure.
+A beginner-friendly blackjack game project built with TypeScript and React. The repository contains a console-based blackjack implementation and a browser-based version created with React + Vite, making it a great example of turning game logic into a user interface.
 
 ## Overview
 
-Blackjack is a card game where the player tries to beat the dealer by reaching a hand total as close to 21 as possible without going over. The project follows standard blackjack rules and includes betting, card dealing, hit and stand decisions, dealer behavior, win and loss calculations, and a clean game interface.
+This project is designed to help learn:
 
-This repository contains two versions of the same game:
+- Core blackjack game rules
+- TypeScript logic and object modeling
+- React state management
+- Component-driven UI design
+- Card dealing, scoring, and win/loss logic
 
-- A console-based TypeScript version in the root folder for learning the core game mechanics.
-- A browser-based React version in the blackjack-react folder with a richer user experience and UI components.
+The game follows standard blackjack rules, including betting, hit and stand actions, dealer logic, handling of aces, and winners/ties.
+
+## Demo / Project Goals
+
+This project demonstrates how an initial command-line game can evolve into a polished React app while keeping the core logic reusable and structured.
 
 ## Features
 
-- Randomized deck and card shuffling
-- Standard card values with ace handling
-- Player betting system and balance tracking
-- Hit and stand actions
-- Dealer turn logic with a 17-point minimum
-- Blackjack detection and payout rules
-- Push and tie handling
-- Bust detection
-- React game table, hand panels, betting controls, and status messages
-- Responsive, styled UI using CSS modules and component-based structure
+- Randomized deck generation and shuffling
+- Blackjack scoring with ace handling
+- Player balance and betting system
+- Hit, stand, bust, and push logic
+- Dealer turn logic with a 17 minimum
+- Blackjack detection and payout handling
+- Responsive React UI for gameplay actions
+- Structured component-based application layout
 
-## Game Rules Implemented
+## Tech Stack
 
-The project follows the most common blackjack rules used in a simple casino-style simulation:
+- TypeScript
+- React
+- Vite
+- CSS
+- Node.js
 
-- Each player starts with two cards.
-- Number cards count as their face value.
-- Face cards count as 10.
-- Aces count as 11 unless that would cause a bust, in which case they count as 1.
-- A player can choose to hit to draw another card or stand to end a turn.
-- The dealer must draw until reaching at least 17.
-- A hand value over 21 is a bust.
-- Blackjack pays 3:2 in the basic game logic.
-- Standard hands pay 1:1.
-- A tie is treated as a push.
+## Blackjack Rules Implemented
+
+- Each player starts with two cards
+- Number cards are worth their face value
+- Face cards count as 10
+- Aces count as 11 unless the total would exceed 21, then they count as 1
+- Players can choose to hit or stand
+- Dealer must draw until reaching at least 17
+- If a hand exceeds 21, it busts
+- A tie is treated as a push
+- Standard wins pay 1:1
+- Blackjack pays 3:2
 
 ## Project Structure
 
 ```text
 Template/
-├─ app.ts                     # Console blackjack game entry point
-├─ card.ts                    # Card model
-├─ deck.ts                    # Deck generation and shuffling
-├─ types.ts                   # Type definitions for cards and deck behavior
-├─ utils.ts                   # Card value, betting, and input utilities
-├─ README.md                  # Project documentation
-├─ blackjack-react/           # React + Vite blackjack application
-│  ├─ src/                    # UI, hooks, styles, and game logic
-│  ├─ public/                 # Static assets
-│  ├─ package.json            # React app dependencies and scripts
-│  ├─ vite.config.ts          # Vite configuration
-│  ├─ index.html              # App entry HTML
-│  └─ README.md               # React app scaffold notes
-└─ tsconfig.json              # TypeScript configuration for the root app
+├─ app.ts                    # Console-version blackjack game
+├─ card.ts                   # Card model
+├─ deck.ts                   # Deck generation and shuffling logic
+├─ types.ts                  # Shared TypeScript types and enums
+├─ utils.ts                  # Betting, scoring, and game helper functions
+├─ README.md                 # Project documentation
+├─ blackjack-react/          # React + Vite front-end version
+│  ├─ src/                   # App source files
+│  ├─ public/                # Static assets
+│  ├─ package.json           # React app dependencies and scripts
+│  ├─ vite.config.ts         # Vite configuration
+│  ├─ index.html             # App entry page
+│  └─ README.md              # React app notes
+├─ tsconfig.json             # Root TypeScript config
+└─ package.json              # Root project setup
 ```
 
-## Root Console Version
+## Console Version
 
-The root project is a TypeScript learning implementation of blackjack. It uses a shuffled deck, calculates hand totals correctly, prompts the player for input, and simulates a full round against the dealer.
+The root folder contains a TypeScript command-line blackjack game that handles the main gameplay logic. It is useful for learning how the rules work before building the UI.
 
-### Root project files
+### Console game files
 
-- app.ts contains the overall game loop.
-- deck.ts creates and shuffles a full deck.
-- card.ts stores individual card data and the card label.
-- utils.ts handles hand totals, bets, prompts, and display strings.
-- types.ts defines shared interfaces and enums for cards and deck behavior.
+- `app.ts` – main game loop
+- `deck.ts` – deck creation and shuffling
+- `card.ts` – individual card representation
+- `utils.ts` – betting and hand-value utilities
+- `types.ts` – interfaces and enum definitions
 
-### Run the console game
-
-1. Open a terminal in the project root.
-2. Install the dependencies:
+### Run the console version
 
 ```bash
 npm install
-```
-
-3. Compile the TypeScript files:
-
-```bash
 npx tsc
-```
-
-4. Run the game:
-
-```bash
 node app.js
 ```
 
-This starts the blackjack game in the terminal, where you can place bets, hit, stand, and continue until you run out of balance.
+## React Version
 
-## React App Version
-
-The blackjack-react folder contains a browser-based version of the same game. It uses React, TypeScript, and Vite to provide a more polished player experience with a game board, score display, betting panel, action buttons, and card layouts.
-
-### Main UI pieces
-
-- App.tsx sets up the game screen and hooks into the game logic.
-- useBlackjack.ts manages the game state and actions.
-- blackjack.ts contains the blackjack rules engine.
-- GameTable renders the dealer and player hands.
-- BettingPanel allows the player to place a bet before a round.
-- ActionButtons provides Hit and Stand actions.
-- GameResult displays the round result.
-
-### React app stack
-
-- React 19
-- TypeScript
-- Vite
-- CSS styling
+The `blackjack-react` folder contains the browser-based game interface. This version adds visual cards, a betting panel, action buttons, and a full game table layout.
 
 ### Run the React app
 
-From the project root, navigate to the React app directory:
-
 ```bash
 cd blackjack-react
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
-The site should open in the browser with the local Vite development server, typically at:
+Then open the local Vite URL shown in the terminal, typically:
 
 ```text
 http://localhost:5173
 ```
 
-To create a production build:
+### Build for production
 
 ```bash
+cd blackjack-react
 npm run build
 ```
 
-This project was verified with the production build command, which completed successfully using Vite.
+This project has been verified to build successfully using the Vite production build command.
 
-## Learning Goals
+## Learning Outcomes
 
-This project is a useful practice project for learning:
+This project is a useful learning exercise for:
 
 - TypeScript classes and interfaces
-- Object-oriented game logic
-- State and lifecycle patterns in React
-- Component composition
-- Event-driven UI updates
-- Card dealing and rule validation
-- Working with local game state and user actions
+- Game logic design
+- React hooks and component state
+- Structuring a front-end app around a rules engine
+- Working with UI events and updates
 
-## Future Enhancements
+## Future Improvements
 
-Possible improvements for this project include:
+Possible enhancements include:
 
 - Split and double-down actions
-- Sound effects and card animations
-- Better bankroll and history tracking
-- Multiplayer or online features
-- Improved styling and responsive layout
-- More advanced betting controls and settings
+- Card animations and sound effects
+- Better bankroll history and statistics
+- Responsive mobile improvements
+- More polished game result messages and UI states
 
 ## Summary
 
-This repository is a practical blackjack project that demonstrates how logic and UI can evolve together from a command-line game into a full front-end experience. It is ideal for students, beginners, and developers who want to understand game-state design, React architecture, and TypeScript-based logic in a real-world example.
+This repository is a practical blackjack project that demonstrates how game logic can be built from scratch and upgraded into a modern React interface. It is clean, educational, and easy to extend for learning and experimentation.
 
-## Project Intent
+## License
 
-The project was created as a learning exercise for building a blackjack game from scratch and then transforming the gameplay logic into a React application. It is simple, educational, and designed to be easy to understand and extend.
+This project is for learning and educational purposes.
